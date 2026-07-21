@@ -1,5 +1,5 @@
 source("Art_Owen_Rcode.R")
-m <- 8
+m <- 4
 s <- 4
 R <- 1000
 

@@ -1,4 +1,5 @@
 source("rsobol_precomputed.R")
+source("integrands.R")
 
 
 # ------------------------------------------------------------
@@ -7,25 +8,13 @@ source("rsobol_precomputed.R")
 
 config <- list(
   fn = "fiftysobol.col",
-  s = 4,
-  k = 8,
-  M = 32,
-  replications = 1000,
-  first_seed = 1
+  s = 2,
+  k = 12,
+  M = 30,
+  replications = 10000,
+  first_seed = 1,
+  integrand = sumueu
 )
-
-
-# ------------------------------------------------------------
-# Integrand
-#
-# Replace the body of this function with the function used
-# in your experiment.
-# ------------------------------------------------------------
-
-f <- function(x) {
-  prod(x)
-}
-
 
 # ------------------------------------------------------------
 # Seed-independent construction
@@ -71,7 +60,7 @@ for (r in seq_len(config$replications)) {
   )
   
   # Compute one RQMC estimate.
-  estimates[r] <- mean(apply(x, 1, f))
+  estimates[r] <- mean(config$integrand(x))
 }
 
 elapsed_time <-
@@ -103,4 +92,43 @@ cat(
   "RQMC var:",
   var(estimates),
   "\n"
+)
+
+
+
+#########################hist
+
+mean_estimate <- mean(estimates)
+centered <- estimates - mean_estimate
+
+variance <- var(estimates)
+
+m2 <- mean(centered^2)
+skewness <- mean(centered^3) / m2^(3 / 2)
+kurtosis <- mean(centered^4) / m2^2 - 3
+
+hist(
+  estimates,
+  breaks = seq(
+    min(estimates),
+    max(estimates),
+    length.out = 101
+  ),
+  main = paste0(
+    "SumUeU — s = ", config$s,
+    ", n = 2^", config$m,
+    ", R = ", config$replications
+  ),
+  xlab = "RQMC estimate",
+  ylab = "Frequency"
+)
+
+legend(
+  "topright",
+  legend = c(
+    sprintf("Variance = %.6e", variance),
+    sprintf("Skewness = %.6f", skewness),
+    sprintf("Kurtosis = %.6f", kurtosis)
+  ),
+  bty = "n"
 )
