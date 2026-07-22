@@ -22,7 +22,8 @@ for (s in s_values) {
       estimates[r] <- mean(f(x))
     }
     
-    elapsed_time <- proc.time() - start_time
+    time_used <- proc.time() - start_time
+    cup_time = time_used[["user.self"]] + time_used[["sys.self"]]
     
     cat(
       func_name,
@@ -34,7 +35,7 @@ for (s in s_values) {
       R, "\n\n"
     )
     
-    cat("Time :", elapsed_time[["elapsed"]], "seconds\n")
+    cat("cpu_Time:", cup_time , "seconds\n")
     cat("RQMC estimate:", mean(estimates), "\n")
     cat("RQMC var:", var(estimates), "\n\n")
   }
