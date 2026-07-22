@@ -23,7 +23,7 @@ for (s in s_values) {
     }
     
     time_used <- proc.time() - start_time
-    cup_time = time_used[["user.self"]] + time_used[["sys.self"]]
+    cpu_time = time_used[["user.self"]] + time_used[["sys.self"]]
     
     cat(
       func_name,
