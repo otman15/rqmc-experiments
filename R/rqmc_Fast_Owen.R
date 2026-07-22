@@ -11,6 +11,17 @@ M <- 30
 f <- mc2
 func_name <- "mc2"
 
+methodName  = "Owen-Fast-R"
+
+results <- data.frame(
+  s = integer(),
+  k = integer(),
+  method = character(),
+  variance = double(),
+  cpu_time = double(),
+  stringsAsFactors = FALSE
+)
+
 for (s in s_values) {
   for (k in k_values) {
     
@@ -24,6 +35,15 @@ for (s in s_values) {
     
     time_used <- proc.time() - start_time
     cpu_time = time_used[["user.self"]] + time_used[["sys.self"]]
+    rqmc_variance <- var(estimates)
+    
+    results[nrow(results) + 1L, ] <- list(
+      s,
+      k,
+      methodName,
+      rqmc_variance,
+      cpu_time
+    )
     
     cat(
       func_name,
@@ -35,10 +55,16 @@ for (s in s_values) {
       R, "\n\n"
     )
     
-    cat("cpu_Time:", cup_time , "seconds\n")
+    cat("cpu_Time:", cpu_time , "seconds\n")
     cat("RQMC estimate:", mean(estimates), "\n")
-    cat("RQMC var:", var(estimates), "\n\n")
+    cat("RQMC var:", rqmc_variance, "\n\n")
   }
+  
+  write.csv(
+    results,
+    "../results/rqmc_fast_owen_results.csv",
+    row.names = FALSE
+  )
 }
 
 
