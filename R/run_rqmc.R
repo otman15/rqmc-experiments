@@ -1,6 +1,6 @@
 source("rsobol_precomputed.R")
 source("integrands.R")
-
+source("rqmc_histogram.R")
 
 # ------------------------------------------------------------
 # Configuration
@@ -8,12 +8,12 @@ source("integrands.R")
 
 config <- list(
   fn = "fiftysobol.col",
-  s = 2,
+  s = 4,
   k = 12,
-  M = 30,
-  replications = 10000,
+  M = 32,
+  replications = 1000,
   first_seed = 1,
-  integrand = sumueu
+  integrand = mc2
 )
 
 # ------------------------------------------------------------
@@ -71,15 +71,15 @@ elapsed_time <-
 # Results
 # ------------------------------------------------------------
 cat(
-  "s",
-  config$s,"\n",
+  "s: ",
+  config$s,"  ",
   "k:",
-  config$k,"\n"
+  config$k,"  ",
+  "m/rep: ",
+  config$replications, "\n \n"
 )
 
 cat(
-  "m/rep",
-  config$replications, "\n",
   "time:",
   elapsed_time,
   "seconds\n"
@@ -97,38 +97,11 @@ cat(
 
 
 #########################hist
-
-mean_estimate <- mean(estimates)
-centered <- estimates - mean_estimate
-
-variance <- var(estimates)
-
-m2 <- mean(centered^2)
-skewness <- mean(centered^3) / m2^(3 / 2)
-kurtosis <- mean(centered^4) / m2^2 - 3
-
-hist(
-  estimates,
-  breaks = seq(
-    min(estimates),
-    max(estimates),
-    length.out = 101
-  ),
-  main = paste0(
-    "SumUeU — s = ", config$s,
-    ", n = 2^", config$m,
-    ", R = ", config$replications
-  ),
-  xlab = "RQMC estimate",
-  ylab = "Frequency"
-)
-
-legend(
-  "topright",
-  legend = c(
-    sprintf("Variance = %.6e", variance),
-    sprintf("Skewness = %.6f", skewness),
-    sprintf("Kurtosis = %.6f", kurtosis)
-  ),
-  bty = "n"
+# 
+plot_rqmc_histogram(
+  estimates = estimates,
+  modelname = "mc2",
+  s = config$s,
+  m = config$k,
+  R = config$replications
 )
