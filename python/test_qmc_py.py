@@ -26,8 +26,10 @@ def run_rqmc(k, s, m, seed):
         points = nus(n)
         estimates[randomization] = np.mean(mc2(points))
     #################################
+    
     '''
-    # use built-in replications######################
+    ####################################################
+    # use built-in replications######## it s fast for small points sets but for large ones it became like manual loop########
     nus = DigitalNetB2(
         dimension=s,
         randomize="NUS",
