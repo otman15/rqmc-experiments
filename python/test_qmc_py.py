@@ -9,48 +9,53 @@ from qmcpy import DigitalNetB2
 from integrands import mc2
 
 
-def run_rqmc(k, s, m, seed):
+def run_rqmc(k, s, m, seed, manual_loop = True):
     n = 2**k
     estimates = np.empty(m)
 
     seeds = np.random.SeedSequence(seed).spawn(m)
 
-    start_time = time.process_time()
-
     # With manual replications ##############################
-
-    for randomization in range(m):
-        nus = DigitalNetB2(
-            dimension=s,
-            randomize="NUS",
-            seed=seeds[randomization]
-        )
-
-        points = nus(n)
-        estimates[randomization] = np.mean(mc2(points))
-
-    ########################################################
-
-    '''
+    if manual_loop:
+        print("Using loop for m randomisations \n")
+        start_time = time.process_time()
+        for randomization in range(m):
+            nus = DigitalNetB2(
+                dimension=s,
+                order="GRAY",
+                randomize="NUS",
+                seed=seeds[randomization],
+                t=32
+            )
+    
+            points = nus(n)
+            estimates[randomization] = np.mean(mc2(points))
+        cpu_time = time.process_time() - start_time
+    
     ########################################################
     # Use built-in replications.
     # It is faster for small point sets, but for large ones
     # its execution time becomes similar to the manual loop.
-
-    nus = DigitalNetB2(
-        dimension=s,
-        randomize="NUS",
-        replications=m,
-        seed=seed
-    )
-
-    points = nus(n)
-    estimates = np.mean(mc2(points), axis=1)
+    else:
+        print("Using the m param in DigitalNetB2 for m randomisations \n")
+        start_time = time.process_time()
+        nus = DigitalNetB2(
+            dimension=s,
+            order="GRAY",
+            randomize="NUS",
+            replications=m,
+            seed=seed,
+            t=32
+        )
+    
+        points = nus(n)
+        estimates = np.mean(mc2(points), axis=1)
+        cpu_time = time.process_time() - start_time
 
     ########################################################
-    '''
+    
 
-    cpu_time = time.process_time() - start_time
+    
 
     '''
     mean_estimate = np.mean(estimates)
@@ -95,7 +100,8 @@ results = []
 
 for s in s_values:
     for k in k_values:
-        results.append(run_rqmc(k, s, m, seed))
+       # results.append(run_rqmc(k, s, m, seed, True))
+        results.append(run_rqmc(k, s, m, seed, False))
 
 
 output_file = Path("../results/qmcpy_results.csv")
