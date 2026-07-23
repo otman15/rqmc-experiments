@@ -3,3 +3,7 @@
 .RData
 .Ruserdata
 python/.spyproject/
+*.res
+*.csv
+__pycache__/
+*.py[cod]
