@@ -18,6 +18,7 @@ results <- data.frame(
   k = integer(),
   method = character(),
   variance = double(),
+  kurtosis = double(),
   cpu_time = double(),
   stringsAsFactors = FALSE
 )
@@ -36,12 +37,14 @@ for (s in s_values) {
     time_used <- proc.time() - start_time
     cpu_time = time_used[["user.self"]] + time_used[["sys.self"]]
     rqmc_variance <- var(estimates)
+    excess_kurtosis_corrected <- e1071::kurtosis(estimates, type = 2)
     
     results[nrow(results) + 1L, ] <- list(
       s,
       k,
       methodName,
       rqmc_variance,
+      excess_kurtosis_corrected,
       cpu_time
     )
     
@@ -57,7 +60,8 @@ for (s in s_values) {
     
     cat("cpu_Time:", cpu_time , "seconds\n")
     cat("RQMC estimate:", mean(estimates), "\n")
-    cat("RQMC var:", rqmc_variance, "\n\n")
+    cat("RQMC var:", rqmc_variance, "\n")
+    cat("kurtosis:", excess_kurtosis_corrected, "\n\n")
   }
   
   write.csv(

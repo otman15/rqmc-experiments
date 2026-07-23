@@ -78,14 +78,15 @@ def run_rqmc(k, s, m, seed):
     return {
         "s": s,
         "k": k,
-        "method": "QMCPy-NUS",
+        "method": "QMCPy",
         "variance": variance,
+        "kurtosis": kurtosis_scipy,
         "cpu_time": cpu_time
     }
 
 
-s_values = [2, 4]
-k_values = [8 , 10, 12]
+s_values = [2, 4, 8, 16]
+k_values = [8, 10, 12]
 
 m = 10000
 seed = 20171215
@@ -108,6 +109,7 @@ with output_file.open("w", newline="", encoding="utf-8") as file:
             "k",
             "method",
             "variance",
+            "kurtosis",
             "cpu_time"
         ]
     )
