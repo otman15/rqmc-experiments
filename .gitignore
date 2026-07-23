@@ -7,3 +7,8 @@ python/.spyproject/
 *.csv
 __pycache__/
 *.py[cod]
+data/*
+!data/.gitkeep
+
+results/*
+!results/.gitkeep
