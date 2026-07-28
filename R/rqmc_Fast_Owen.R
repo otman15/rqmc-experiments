@@ -1,11 +1,11 @@
 source("Art_Owen_Fast.R")
 source("integrands.R")
-source("rqmc_histogram.R")
+source("util.R")
 
 k_values <- c(8, 10, 12)
 s_values <- c(2, 4, 8, 16)
 
-R <- 10000
+R <- 100
 M <- 30
 
 f <- mc2
@@ -37,7 +37,7 @@ for (s in s_values) {
     time_used <- proc.time() - start_time
     cpu_time = time_used[["user.self"]] + time_used[["sys.self"]]
     rqmc_variance <- var(estimates)
-    excess_kurtosis_corrected <- e1071::kurtosis(estimates, type = 2)
+    excess_kurtosis_corrected <- compute_excess_kurtosis(estimates, type = 2)
     
     results[nrow(results) + 1L, ] <- list(
       s,
@@ -64,11 +64,11 @@ for (s in s_values) {
     cat("kurtosis:", excess_kurtosis_corrected, "\n\n")
   }
   
-  write.csv(
-    results,
-    "../results/rqmc_fast_owen_results.csv",
-    row.names = FALSE
-  )
+  # write.csv(
+  #   results,
+  #   "../results/rqmc_fast_owen_results.csv",
+  #   row.names = FALSE
+  # )
 }
 
 

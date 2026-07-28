@@ -12,3 +12,47 @@ data/*
 
 results/*
 !results/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors/IDE
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Python
+.pytest_cache/
+python/Py-restuls/
+.ipynb_checkpoints/
+
+# Julia
+julia/jl-results/
+jl-results/
+
+# R / renv
+R/R-results/
+renv/library/
+R/renv/library/
+renv/staging/
+R/renv/staging/
+*.RData
+.Rhistory
+
+# Build / binaries
+*.o
+*.so
+*.dll
+*.exe
+*.out
+*.a
+
+# Logs / temp
+*.log
+tmp/
+*.tmp
+.cache/
+.coverage
+coverage/

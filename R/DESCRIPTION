@@ -1,0 +1,20 @@
+Package: rqmc
+Version: 0.1.0
+Title: RQMC Experiments
+Description: Randomized Quasi-Monte Carlo experiments based on Sobol sequences
+Authors@R: c(person("Art", "Owen", role = "aut"),
+             person("Contributors", role = "ctb"))
+Depends:
+    R (>= 4.4.0)
+Imports:
+    e1071,
+    class,
+    proxy,
+    MASS,
+    stats,
+    graphics,
+    grDevices,
+    utils,
+    methods
+License: BSD-3-Clause
+Encoding: UTF-8
