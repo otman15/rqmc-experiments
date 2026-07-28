@@ -52,7 +52,7 @@ def main():
     seed = 20171215
     num_runs = 10
 
-    output_dir = Path(__file__).resolve().parent / "Py-restuls"
+    output_dir = Path(__file__).resolve().parent / "py-results"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     results = []

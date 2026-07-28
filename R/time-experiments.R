@@ -1,14 +1,14 @@
 source("integrands.R")
 
 s_values <- c(2, 4, 8, 16)
-k_values <- c(8, 10, 12, 14)
+k_values <- c(8, 10, 12, 14) # n = 2^k
 
 M <- 32
 first_seed <- 1
 integrand <- mc2
 
 R_values <- c(1, 5, 10, 50, 100)
-num_runs <- 10
+num_runs <- 10 #number runs for the median time
 
 results <- data.frame(
   method = character(),
@@ -53,7 +53,7 @@ for (s in s_values) {
       results <- rbind(
         results,
         data.frame(
-          method = "ART_Owen",
+          method = "ART-Owen",
           s = s,
           k = k,
           m = R,
