@@ -66,9 +66,14 @@ for (s in s_values) {
   }
 }
 
+output_path <- file.path(
+  "/home/otman/Documents/GitHub/Data/o-test/nus/nus-timing",
+  paste0("owen_time_by_rep-", num_runs, ".csv")
+)
+
 write.csv(
   results,
-  "R-results/owen_time_by_rep.csv",
+  output_path,
   row.names = FALSE,
   quote = FALSE
 )

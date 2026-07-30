@@ -52,7 +52,7 @@ def main():
     seed = 20171215
     num_runs = 10
 
-    output_dir = Path(__file__).resolve().parent / "py-results"
+    output_dir = Path("/home/otman/Documents/GitHub/Data/o-test/nus/nus-timing")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     results = []
@@ -76,7 +76,7 @@ def main():
                     f"s={s}, k={k}, m={m}, median time={median_time:.6f} seconds"
                 )
 
-    output_file = output_dir / "qmcpy_time_by_rep.csv"
+    output_file = output_dir / f"qmcpy_time_by_rep-{num_runs}.csv"
 
     with output_file.open("w", newline="", encoding="utf-8") as file:
         writer = csv.DictWriter(

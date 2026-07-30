@@ -5,15 +5,16 @@ using Printf
 
 include(joinpath(@__DIR__, "integrands.jl"))
 
-const s_values = [2, 4, 8, 16]
-const k_values = [8, 10, 12, 14]
-const m_values = [1, 5, 10, 50, 100]
+const s_values = [2, 4, 8, 16, 32]
+const k_values = [8, 10, 12, 14, 16]
+const m_values = [1, 2, 5, 10, 20, 30, 50]
 
 const pad = 30
 const seed = 20171215
-const num_runs = 10
+const num_runs = 11
 
-output_dir = joinpath(@__DIR__, "jl-results")
+# output_dir = joinpath(@__DIR__, "jl-results") 
+output_dir = joinpath(@__DIR__, "/home/otman/Documents/GitHub/Data/o-test/nus/nus-timing")
 mkpath(output_dir)
 
 results = Vector{Tuple{String, Int, Int, Int, Float64}}()
@@ -61,7 +62,7 @@ for s in s_values
     end
 end
 
-output_file = joinpath(output_dir, "sciMl_time_by_rep.csv")
+output_file = joinpath(output_dir, "sciMl_time_by_rep-$(num_runs).csv")
 
 open(output_file, "w") do io
     println(io, "method,s,k,m,median_time")
