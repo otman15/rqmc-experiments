@@ -5,6 +5,7 @@
 python/.spyproject/
 *.res
 *.csv
+*.dat
 __pycache__/
 *.py[cod]
 data/*
