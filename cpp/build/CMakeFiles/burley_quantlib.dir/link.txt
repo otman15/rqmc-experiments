@@ -1,0 +1,2 @@
+/usr/bin/ar qc libburley_quantlib.a "CMakeFiles/burley_quantlib.dir/methods/burley-quantlib/adapter/BurleyQuantLib.cpp.o"
+/usr/bin/ranlib libburley_quantlib.a

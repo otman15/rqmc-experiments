@@ -1,0 +1,2 @@
+/usr/bin/ar qc libfriedel_keller_libseq.a "CMakeFiles/friedel_keller_libseq.dir/methods/friedel-keller-libseq/adapter/FriedelKellerLibseq.cpp.o"
+/usr/bin/ranlib libfriedel_keller_libseq.a

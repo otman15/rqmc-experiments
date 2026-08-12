@@ -1,0 +1,2 @@
+/usr/bin/ar qc libpbrt_owen_scrambler.a "CMakeFiles/pbrt_owen_scrambler.dir/methods/pbrt-owen/adapter/PbrtOwenScrambler.cpp.o"
+/usr/bin/ranlib libpbrt_owen_scrambler.a
