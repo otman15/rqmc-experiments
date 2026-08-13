@@ -1,2 +1,0 @@
-/usr/bin/ar qc libhelmer_stochastic_sobol.a "CMakeFiles/helmer_stochastic_sobol.dir/methods/helmer-stochastic-generation/adapter/HelmerStochasticSobol.cpp.o"
-/usr/bin/ranlib libhelmer_stochastic_sobol.a

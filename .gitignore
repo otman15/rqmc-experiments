@@ -57,3 +57,8 @@ tmp/
 .cache/
 .coverage
 coverage/
+cpp/build/
+
+# Plot outputs
+plots/*
+!plots/.gitkeep

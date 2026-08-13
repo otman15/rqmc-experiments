@@ -2,6 +2,24 @@
 
 C++ implementations used to compare Nested Uniform Scrambling / Owen scrambling methods.
 
+# C++ NUS Experiments
+
+C++ implementations used to compare Nested Uniform Scrambling / Owen scrambling methods.
+
+## Dependencies
+
+Required system packages:
+
+- CMake
+- C++17-compatible compiler
+- Boost development libraries
+
+Ubuntu/Debian:
+
+```bash
+sudo apt update
+sudo apt install build-essential cmake libboost-all-dev
+```
 ## Implementations
 
 ### Friedel–Keller / libseq

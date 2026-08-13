@@ -12,6 +12,7 @@
 #include "HelmerStochasticSobol.h"
 #include "PbrtFastOwenScrambler.h"
 #include "PbrtOwenScrambler.h"
+#include "AdaptiveRegularTiles.h"
 #include "RqmcReplications.h"
 #include "Statistics.h"
 
@@ -123,10 +124,7 @@ int main()
     std::filesystem::create_directories(outputDir);
 
   const std::vector<std::pair<std::string, std::string>> models = {
-      {"SUMUEU", "sumueu"},
-      {"SMOOTHPERB4", "smoothperb4"},
-      {"MC2", "mc2"},
-      {"POLYNOMIAL", "polynomial"}
+      {"MC2", "mc2"}
   };
 
   const std::vector<unsigned int> sValues = {
@@ -143,7 +141,7 @@ int main()
 
     const long seed = 20171215;
     const unsigned int numRuns = 11;
-
+/*
     runTimingForMethod<FriedelKellerLibseq>(
         "Friedel-Keller/libseq",
         "friedel-keller-libseq",
@@ -198,6 +196,17 @@ int main()
         seed,
         numRuns,
         outputDir);
+*/        
+    runTimingForMethod<AdaptiveRegularTiles>(
+    "Adaptive-Regular-Tiles",
+    "adaptive-regular-tiles",
+    models,
+    sValues,
+    kValues,
+    timingMValues,
+    seed,
+    numRuns,
+    outputDir);
 
     return 0;
 }

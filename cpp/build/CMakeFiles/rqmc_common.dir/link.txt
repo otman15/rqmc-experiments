@@ -1,2 +1,0 @@
-/usr/bin/ar qc librqmc_common.a CMakeFiles/rqmc_common.dir/src/common/Integrands.cpp.o CMakeFiles/rqmc_common.dir/src/common/RqmcReplications.cpp.o CMakeFiles/rqmc_common.dir/src/common/Statistics.cpp.o
-/usr/bin/ranlib librqmc_common.a

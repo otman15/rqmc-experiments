@@ -299,3 +299,38 @@ target_link_libraries(time_experiments PRIVATE
 target_link_libraries(statistics_experiments PRIVATE
     helmer_stochastic_sobol
 )
+
+# ---------------------------------------------------------------------------
+# Adaptive Regular Tiles / ART-Owen adapter
+# ---------------------------------------------------------------------------
+
+set(ADAPTIVE_REGULAR_TILES_ADAPTER_DIR
+    ${CMAKE_CURRENT_SOURCE_DIR}/methods/adaptive-regular-tiles/adapter)
+
+add_library(adaptive_regular_tiles STATIC
+    ${ADAPTIVE_REGULAR_TILES_ADAPTER_DIR}/AdaptiveRegularTiles.cpp
+)
+
+target_include_directories(adaptive_regular_tiles PUBLIC
+    ${ADAPTIVE_REGULAR_TILES_ADAPTER_DIR}
+)
+
+target_link_libraries(adaptive_regular_tiles PUBLIC
+    pbrt_sobol_core
+)
+
+add_executable(test_adaptive_regular_tiles
+    ${ADAPTIVE_REGULAR_TILES_ADAPTER_DIR}/test_adapter.cpp
+)
+
+target_link_libraries(test_adaptive_regular_tiles PRIVATE
+    adaptive_regular_tiles
+)
+
+target_link_libraries(time_experiments PRIVATE
+    adaptive_regular_tiles
+)
+
+target_link_libraries(statistics_experiments PRIVATE
+    adaptive_regular_tiles
+)

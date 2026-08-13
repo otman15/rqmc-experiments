@@ -1,2 +1,0 @@
-/usr/bin/ar qc libpbrt_sobol_core.a "CMakeFiles/pbrt_sobol_core.dir/methods/pbrt-owen/adapter/PbrtSobolCore.cpp.o" "CMakeFiles/pbrt_sobol_core.dir/methods/pbrt-owen/upstream/pbrt-v4/src/pbrt/util/sobolmatrices.cpp.o"
-/usr/bin/ranlib libpbrt_sobol_core.a

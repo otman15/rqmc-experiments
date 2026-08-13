@@ -13,6 +13,7 @@
 #include "HelmerStochasticSobol.h"
 #include "PbrtFastOwenScrambler.h"
 #include "PbrtOwenScrambler.h"
+#include "AdaptiveRegularTiles.h"
 #include "RqmcReplications.h"
 #include "Statistics.h"
 
@@ -140,7 +141,7 @@ int main()
 
     const unsigned int statisticsM = 1000;
     const long seed = 20171215;
-
+/*
     runStatisticsForMethod<FriedelKellerLibseq>(
         "Friedel-Keller-libseq",
         models,
@@ -185,6 +186,15 @@ int main()
         statisticsM,
         seed,
         outputDir);
+*/        
+    runStatisticsForMethod<AdaptiveRegularTiles>(
+    "Adaptive-Regular-Tiles",
+    models,
+    sValues,
+    kValues,
+    statisticsM,
+    seed,
+    outputDir);
 
     return 0;
 }
