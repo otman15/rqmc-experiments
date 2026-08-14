@@ -140,6 +140,8 @@ def main():
         ("SmoothPerB4", partial(smoothperb4, expw=1.0)),
         ("Polynomial", polynomial),
     ]
+    modelsTiming = [("MC2", mc2)]
+    
     s_values = [2, 4, 8, 16, 32]
     k_values = [8, 10, 12, 14, 16]
     timing_m_values = [1, 2, 5, 10, 20, 30, 50]
@@ -149,7 +151,7 @@ def main():
 
     if mode == TIMING:
         run_timing_experiments(
-            models,
+            modelsTiming,
             s_values,
             k_values,
             timing_m_values,

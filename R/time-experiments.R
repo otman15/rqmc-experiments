@@ -165,7 +165,7 @@ run_statistics_experiments <- function(
 main <- function() {
   TIMING <- "TIMING"
   STATISTICS <- "STATISTICS"
-  mode <- STATISTICS
+  mode <- TIMING
 
   method <- "ART-Owen"
   models <- list(
@@ -177,6 +177,9 @@ main <- function() {
     ),
     list(name = "Polynomial", integrand = polynomial)
   )
+
+  models_Timing <- list(list(name = "MC2", integrand = mc2))
+  
   s_values <- c(2, 4, 8, 16, 32)
   k_values <- c(8, 10, 12, 14, 16)
   timing_m_values <- c(1, 2, 5, 10, 20, 30, 50)
@@ -190,7 +193,7 @@ main <- function() {
 
   if (mode == TIMING) {
     run_timing_experiments(
-      models,
+      models_Timing,
       s_values,
       k_values,
       timing_m_values,
