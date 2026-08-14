@@ -19,7 +19,7 @@ from integrands import mc2, polynomial, smoothperb4, sumueu
 def run_rqmc_replications(model, k, s, m, seed):
     """Run m RQMC replications once and return their estimates and elapsed time."""
     n = 2**k
-    start_time = time.perf_counter()
+    start_time = time.process_time()
     estimates = np.empty(m)
 
     for replication in range(m):
@@ -35,7 +35,7 @@ def run_rqmc_replications(model, k, s, m, seed):
         points = nus(n)
         estimates[replication] = np.mean(model(points))
 
-    elapsed_time = time.perf_counter() - start_time
+    elapsed_time = time.process_time() - start_time
     return estimates, elapsed_time
 
 
@@ -131,7 +131,7 @@ def main():
     statistics_output_dir = timing_output_dir / "dat"
     TIMING = "TIMING"
     STATISTICS = "STATISTICS"
-    mode = STATISTICS
+    mode = TIMING
 
     method = "NUS-QMCPy"
     models = [

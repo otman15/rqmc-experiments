@@ -93,7 +93,7 @@ if __name__ == "__main__":
     method_name = "NUS-QMCPy"
 
     s_values = [4]
-    k_values = [8, 10, 12]
+    k_values = [8, 10, 12, 14]
     m = 1000
     seed = 20171215
 

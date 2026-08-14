@@ -2,6 +2,7 @@ using QuasiMonteCarlo
 using Random
 using Statistics
 using Printf
+using CPUTime
 
 include(joinpath(@__DIR__, "integrands.jl"))
 
@@ -9,7 +10,7 @@ include(joinpath(@__DIR__, "integrands.jl"))
 function run_rqmc_replications(integrand, k, s, m, pad, first_seed)
     n = 2^k
     
-    elapsed_time = @elapsed begin
+    elapsed_time = @CPUelapsed begin
         estimates = Vector{Float64}(undef, m)
         rng = MersenneTwister(first_seed)
         sampler = SobolSample(
@@ -205,7 +206,7 @@ end
 function main()
     TIMING = "TIMING"
     STATISTICS = "STATISTICS"
-    mode = STATISTICS
+    mode = TIMING
 
     method = "NUS-SciML"
     models = [

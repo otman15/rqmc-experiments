@@ -1,7 +1,7 @@
 #ifndef RQMC_REPLICATIONS_H
 #define RQMC_REPLICATIONS_H
 
-#include <chrono>
+#include <time.h>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -29,7 +29,8 @@ RqmcReplicationResult runRqmcReplications(
 
     std::vector<double> x(s);
 
-    auto start = std::chrono::steady_clock::now();
+    timespec start;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 
     for (unsigned int r = 0; r < m; ++r)
     {
@@ -56,10 +57,12 @@ RqmcReplicationResult runRqmcReplications(
             sum / static_cast<double>(n));
     }
 
-    auto end = std::chrono::steady_clock::now();
-
+    timespec end;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+    
     double elapsedTimeSeconds =
-        std::chrono::duration<double>(end - start).count();
+      static_cast<double>(end.tv_sec - start.tv_sec)
+      + static_cast<double>(end.tv_nsec - start.tv_nsec) * 1e-9;
 
     return {estimates, elapsedTimeSeconds};
 }
