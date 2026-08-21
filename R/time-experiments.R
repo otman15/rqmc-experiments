@@ -70,7 +70,7 @@ run_timing_experiments <- function(
           results <- rbind(
             results,
             data.frame(
-              method = "ART-Owen",
+              method = "Art-Owen",
               s = s,
               k = k,
               m = m,
@@ -167,7 +167,7 @@ main <- function() {
   STATISTICS <- "STATISTICS"
   mode <- TIMING
 
-  method <- "ART-Owen"
+  method <- "Art-Owen"
   models <- list(
     list(name = "MC2", integrand = mc2),
     list(name = "SumUeU", integrand = sumueu),
