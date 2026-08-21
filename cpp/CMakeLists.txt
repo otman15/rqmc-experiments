@@ -5,6 +5,8 @@ project(rqmc_cpp LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+enable_testing()
+
 set(LIBSEQ_DIR
     ${CMAKE_CURRENT_SOURCE_DIR}/methods/friedel-keller-libseq/upstream/libseq_beta_04.21.01)
 
@@ -148,6 +150,14 @@ add_executable(test_statistics
 target_link_libraries(test_statistics PRIVATE
     rqmc_common
 )
+
+add_test(NAME statistics COMMAND test_statistics)
+add_test(NAME friedel_keller COMMAND test_friedel_keller)
+add_test(NAME burley_quantlib COMMAND test_burley_quantlib)
+add_test(NAME pbrt_owen COMMAND test_pbrt_owen)
+add_test(NAME pbrt_fast_owen COMMAND test_pbrt_fast_owen)
+add_test(NAME helmer_stochastic_sobol COMMAND test_helmer_stochastic_sobol)
+add_test(NAME adaptive_regular_tiles COMMAND test_adaptive_regular_tiles)
 
 # ---------------------------------------------------------------------------
 # QuantLib Burley adapter

@@ -125,10 +125,10 @@ int main()
     std::filesystem::create_directories(outputDir);
 
   const std::vector<std::pair<std::string, std::string>> models = {
-      {"SUMUEU", "sumueu"},
-      {"SMOOTHPERB4", "smoothperb4"},
+      {"SumUeU", "sumueu"},
+      {"SmoothPerB4", "smoothperb4"},
       {"MC2", "mc2"},
-      {"POLYNOMIAL", "polynomial"}
+      {"Polynomial", "polynomial"}
   };
 
   const std::vector<unsigned int> sValues = {
@@ -141,7 +141,7 @@ int main()
 
     const unsigned int statisticsM = 1000;
     const long seed = 20171215;
-/*
+
     runStatisticsForMethod<FriedelKellerLibseq>(
         "Friedel-Keller-libseq",
         models,
@@ -186,7 +186,7 @@ int main()
         statisticsM,
         seed,
         outputDir);
-*/        
+        
     runStatisticsForMethod<AdaptiveRegularTiles>(
     "Adaptive-Regular-Tiles",
     models,
