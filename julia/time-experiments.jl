@@ -214,6 +214,11 @@ function main()
         ("SumUeU", sumueu),
         ("SmoothPerB4", points -> smoothperb4(points, 1.0)),
         ("Polynomial", polynomial),
+        ("Oscillatory", oscillatory),
+        ("Gaussian", gaussian),
+        ("SmoothGauss", smoothgauss),
+        ("PieceLinGauss", piecelingauss),
+        ("IndSumNormal", indsumnormal),
     ]
 
     modelsTiming = [

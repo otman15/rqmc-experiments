@@ -20,6 +20,21 @@ double evaluateRqmcModel(
     if (model == "polynomial")
         return polynomial(x);
 
+    if (model == "oscillatory")
+        return oscillatory(x);
+
+    if (model == "gaussian")
+        return gaussian(x);
+
+    if (model == "smoothgauss")
+        return smoothgauss(x);
+
+    if (model == "piecelingauss")
+        return piecelingauss(x);
+
+    if (model == "indsumnormal")
+        return indsumnormal(x);
+
     throw std::invalid_argument(
         "Unknown RQMC model: " + model);
 }

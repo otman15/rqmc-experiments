@@ -128,7 +128,12 @@ int main()
       {"SumUeU", "sumueu"},
       {"SmoothPerB4", "smoothperb4"},
       {"MC2", "mc2"},
-      {"Polynomial", "polynomial"}
+      {"Polynomial", "polynomial"},
+      {"Oscillatory", "oscillatory"},
+      {"Gaussian", "gaussian"},
+      {"SmoothGauss", "smoothgauss"},
+      {"PieceLinGauss", "piecelingauss"},
+      {"IndSumNormal", "indsumnormal"}
   };
 
   const std::vector<unsigned int> sValues = {

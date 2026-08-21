@@ -175,7 +175,12 @@ main <- function() {
       name = "SmoothPerB4",
       integrand = function(x) smoothperb4(x, expw = 1.0)
     ),
-    list(name = "Polynomial", integrand = polynomial)
+    list(name = "Polynomial", integrand = polynomial),
+    list(name = "Oscillatory", integrand = oscillatory),
+    list(name = "Gaussian", integrand = gaussian),
+    list(name = "SmoothGauss", integrand = smoothgauss),
+    list(name = "PieceLinGauss", integrand = piecelingauss),
+    list(name = "IndSumNormal", integrand = indsumnormal)
   )
 
   models_Timing <- list(list(name = "MC2", integrand = mc2))

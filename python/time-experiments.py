@@ -13,7 +13,17 @@ import numpy as np
 from qmcpy import DigitalNetB2
 from scipy.stats import kurtosis, skew
 
-from integrands import mc2, polynomial, smoothperb4, sumueu
+from integrands import (
+    gaussian,
+    indsumnormal,
+    mc2,
+    oscillatory,
+    piecelingauss,
+    polynomial,
+    smoothgauss,
+    smoothperb4,
+    sumueu,
+)
 
 
 def run_rqmc_replications(model, k, s, m, seed):
@@ -139,6 +149,11 @@ def main():
         ("SumUeU", sumueu),
         ("SmoothPerB4", partial(smoothperb4, expw=1.0)),
         ("Polynomial", polynomial),
+        ("Oscillatory", oscillatory),
+        ("Gaussian", gaussian),
+        ("SmoothGauss", smoothgauss),
+        ("PieceLinGauss", piecelingauss),
+        ("IndSumNormal", indsumnormal),
     ]
     modelsTiming = [("MC2", mc2)]
     
