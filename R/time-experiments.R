@@ -192,8 +192,8 @@ main <- function() {
   M <- 32
   first_seed <- 1
   num_runs <- 11
-
-  timing_output_dir <- "R-results"
+  timing_output_dir <-  "/mnt/c/Users/cherrato/Dropbox/Nus-comparisons/all-methods" #"R-results"
+  #timing_output_dir <- "R-results"
   statistics_output_dir <- file.path(timing_output_dir, "dat")
 
   if (mode == TIMING) {

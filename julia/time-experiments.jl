@@ -232,7 +232,8 @@ function main()
     seed = 20171215
     num_runs = 11
 
-    timing_output_dir = joinpath(@__DIR__, "jl-results")
+    # timing_output_dir = joinpath(@__DIR__, "jl-results")
+    timing_output_dir =  joinpath(@__DIR__, "/mnt/c/Users/cherrato/Dropbox/Nus-comparisons/all-methods/") #joinpath(@__DIR__, "jl-results")
     statistics_output_dir = joinpath(timing_output_dir, "dat")
 
     if mode == TIMING
