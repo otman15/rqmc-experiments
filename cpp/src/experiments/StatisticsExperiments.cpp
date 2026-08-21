@@ -119,8 +119,8 @@ void runStatisticsForMethod(
 
 int main()
 {
-    const std::filesystem::path outputDir =
-        "cpp-results/dat";
+    // const std::filesystem::path outputDir = "cpp-results/dat";
+    const std::filesystem::path outputDir =  "/mnt/c/Users/cherrato/Dropbox/Nus-comparisons/all-methods/dat";
 
     std::filesystem::create_directories(outputDir);
 

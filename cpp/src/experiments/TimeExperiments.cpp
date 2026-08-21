@@ -120,7 +120,8 @@ void runTimingForMethod(
 
 int main()
 {
-    const std::filesystem::path outputDir = "cpp-results";
+    // const std::filesystem::path outputDir = "cpp-results";
+    const std::filesystem::path outputDir = "/mnt/c/Users/cherrato/Dropbox/Nus-comparisons/all-methods";
     std::filesystem::create_directories(outputDir);
 
   const std::vector<std::pair<std::string, std::string>> models = {
