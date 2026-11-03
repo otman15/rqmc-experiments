@@ -4,12 +4,14 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
 #include "BurleyQuantLib.h"
 #include "FriedelKellerLibseq.h"
 #include "HelmerStochasticSobol.h"
+#include "NewCachedNusPointSet.h"
 #include "PbrtFastOwenScrambler.h"
 #include "PbrtOwenScrambler.h"
 #include "AdaptiveRegularTiles.h"
@@ -25,7 +27,7 @@ enum class Method
     HelmerStochasticSobol
 };
 
-template <typename Sequence>
+template <typename Sequence, bool ReuseStorage = false>
 void runTimingForMethod(
     const std::string& methodName,
     const std::string& fileTag,
@@ -37,6 +39,11 @@ void runTimingForMethod(
     unsigned int numRuns,
     const std::filesystem::path& outputDir)
 {
+    if constexpr (ReuseStorage)
+        std::cout << methodName
+                  << ": seed once per run; continuous RNG across replications. "
+                  << "CPU phase totals cover all m replications; medians are over "
+                  << numRuns << " runs and are computed independently.\n";
     for (const auto& [modelName, model] : models)
     {
         const std::filesystem::path outputFile =
@@ -54,7 +61,11 @@ void runTimingForMethod(
                 "Cannot open output file: " +
                 outputFile.string());
 
-        file << "method,s,k,m,median_time\n";
+        if constexpr (ReuseStorage)
+            file << "method,s,k,m,median_preparation_cpu_s,median_scrambling_total_cpu_s,"
+                    "median_evaluation_total_cpu_s,median_experiment_total_cpu_s\n";
+        else
+            file << "method,s,k,m,median_time\n";
         file << std::setprecision(17);
 
         for (unsigned int s : sValues)
@@ -65,6 +76,13 @@ void runTimingForMethod(
                 {
                     std::vector<double> timings;
                     timings.reserve(numRuns);
+                    std::vector<double> preparationTimes, scramblingTimes, evaluationTimes;
+                    if constexpr (ReuseStorage)
+                    {
+                        preparationTimes.reserve(numRuns);
+                        scramblingTimes.reserve(numRuns);
+                        evaluationTimes.reserve(numRuns);
+                    }
 
                     for (unsigned int run = 0;
                          run < numRuns;
@@ -75,16 +93,28 @@ void runTimingForMethod(
                             static_cast<long>(run) *
                             static_cast<long>(m);
 
-                        const auto result =
-                            runRqmcReplications<Sequence>(
-                                model,
-                                k,
-                                s,
-                                m,
-                                runSeed);
+                        const auto result = [&]
+                        {
+                            if constexpr (ReuseStorage)
+                                return runPreparedRqmcReplications(model, s, m, [=]
+                                {
+                                    if constexpr (std::is_same_v<Sequence, HelmerStochasticSobol>)
+                                        return Sequence(s, k, runSeed, Sequence::Initialization::PrepareOnly);
+                                    else
+                                        return Sequence(s, k, runSeed);
+                                });
+                            else
+                                return runRqmcReplications<Sequence>(model, k, s, m, runSeed);
+                        }();
 
                         timings.push_back(
                             result.elapsedTimeSeconds);
+                        if constexpr (ReuseStorage)
+                        {
+                            preparationTimes.push_back(result.preparationTimeSeconds);
+                            scramblingTimes.push_back(result.scramblingTimeSeconds);
+                            evaluationTimes.push_back(result.evaluationTimeSeconds);
+                        }
                     }
 
                     const double medianTime =
@@ -94,8 +124,13 @@ void runTimingForMethod(
                         << methodName << ','
                         << s << ','
                         << k << ','
-                        << m << ','
-                        << medianTime << '\n';
+                        << m << ',';
+
+                    if constexpr (ReuseStorage)
+                        file << median(preparationTimes) << ','
+                             << median(scramblingTimes) << ','
+                             << median(evaluationTimes) << ',';
+                    file << medianTime << '\n';
 
                     std::cout
                         << "method=" << methodName
@@ -103,11 +138,15 @@ void runTimingForMethod(
                         << ", s=" << s
                         << ", k=" << k
                         << ", m=" << m
-                        << ", median time="
                         << std::fixed
-                        << std::setprecision(6)
-                        << medianTime
-                        << " seconds\n";
+                        << std::setprecision(6);
+                    if constexpr (ReuseStorage)
+                        std::cout << ", median preparation CPU(s)=" << median(preparationTimes)
+                                  << ", median scrambling CPU(s), total over m=" << median(scramblingTimes)
+                                  << ", median evaluation CPU(s), total over m=" << median(evaluationTimes)
+                                  << ", median experiment CPU(s), total=" << medianTime << '\n';
+                    else
+                        std::cout << ", median time=" << medianTime << " seconds\n";
                 }
             }
         }
@@ -120,8 +159,8 @@ void runTimingForMethod(
 
 int main()
 {
-    // const std::filesystem::path outputDir = "cpp-results";
-    const std::filesystem::path outputDir = "/mnt/c/Users/cherrato/Dropbox/Nus-comparisons/all-methods";
+    const std::filesystem::path outputDir = "cpp-results";
+    // const std::filesystem::path outputDir = "/mnt/c/Users/cherrato/Dropbox/Nus-comparisons/all-methods";
     std::filesystem::create_directories(outputDir);
 
   const std::vector<std::pair<std::string, std::string>> models = {
@@ -129,7 +168,7 @@ int main()
   };
 
   const std::vector<unsigned int> sValues = {
-      2, 4, 8, 16, 32
+      2, 4, 8, 16
   };
 
   const std::vector<unsigned int> kValues = {
@@ -187,7 +226,8 @@ int main()
         numRuns,
         outputDir);
 
-    runTimingForMethod<HelmerStochasticSobol>(
+*/
+    runTimingForMethod<HelmerStochasticSobol, true>(
         "Helmer-Stochastic-Sobol",
         "helmer-stochastic-sobol",
         models,
@@ -197,17 +237,27 @@ int main()
         seed,
         numRuns,
         outputDir);
-*/        
-    runTimingForMethod<AdaptiveRegularTiles>(
-    "Adaptive-Regular-Tiles",
-    "adaptive-regular-tiles",
-    models,
-    sValues,
-    kValues,
-    timingMValues,
-    seed,
-    numRuns,
-    outputDir);
+    runTimingForMethod<NewCachedNusPointSet, true>(
+        "NewCachedNusPointSet",
+        "new-cached-nus",
+        models,
+        sValues,
+        kValues,
+        timingMValues,
+        seed,
+        numRuns,
+        outputDir);
+
+    // runTimingForMethod<AdaptiveRegularTiles>(
+    // "Adaptive-Regular-Tiles",
+    // "adaptive-regular-tiles",
+    // models,
+    // sValues,
+    // kValues,
+    // timingMValues,
+    // seed,
+    // numRuns,
+    // outputDir);
 
     return 0;
 }

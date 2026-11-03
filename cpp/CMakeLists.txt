@@ -302,12 +302,74 @@ target_link_libraries(test_helmer_stochastic_sobol PRIVATE
     helmer_stochastic_sobol
 )
 
+target_include_directories(test_helmer_stochastic_sobol PRIVATE
+    ${HELMER_DIR}/sampling
+)
+
 target_link_libraries(time_experiments PRIVATE
     helmer_stochastic_sobol
 )
 
 target_link_libraries(statistics_experiments PRIVATE
     helmer_stochastic_sobol
+)
+
+# ---------------------------------------------------------------------------
+# New cached NUS (Java parent-traversal port)
+# ---------------------------------------------------------------------------
+
+set(NEW_CACHED_NUS_ADAPTER_DIR
+    ${CMAKE_CURRENT_SOURCE_DIR}/methods/new-cached-nus/adapter)
+
+add_library(new_cached_nus STATIC
+    ${NEW_CACHED_NUS_ADAPTER_DIR}/NewCachedNusPointSet.cpp
+)
+
+target_include_directories(new_cached_nus PUBLIC
+    ${NEW_CACHED_NUS_ADAPTER_DIR}
+)
+
+target_include_directories(new_cached_nus PRIVATE
+    ${HELMER_DIR}/sampling
+)
+
+target_link_libraries(new_cached_nus PRIVATE
+    pbrt_sobol_core
+)
+
+add_executable(test_new_cached_nus
+    ${NEW_CACHED_NUS_ADAPTER_DIR}/test_adapter.cpp
+)
+
+target_include_directories(test_new_cached_nus PRIVATE
+    ${HELMER_DIR}/sampling
+)
+
+target_link_libraries(test_new_cached_nus PRIVATE
+    new_cached_nus
+    pbrt_sobol_core
+)
+
+add_test(NAME new_cached_nus COMMAND test_new_cached_nus)
+
+target_link_libraries(time_experiments PRIVATE new_cached_nus)
+target_link_libraries(statistics_experiments PRIVATE new_cached_nus)
+
+add_executable(test_rqmc_replications tests/test_rqmc_replications.cpp)
+target_link_libraries(test_rqmc_replications PRIVATE
+    rqmc_common
+    helmer_stochastic_sobol
+    new_cached_nus
+)
+add_test(NAME rqmc_replications COMMAND test_rqmc_replications)
+
+# Single-configuration comparison with editable settings and a console report.
+add_executable(compare_nus_methods src/experiments/CompareNUSMethods.cpp)
+target_link_libraries(compare_nus_methods PRIVATE
+    rqmc_common
+    new_cached_nus
+    helmer_stochastic_sobol
+    friedel_keller_libseq
 )
 
 # ---------------------------------------------------------------------------

@@ -17,6 +17,14 @@ public:
     FriedelKellerLibseq(const FriedelKellerLibseq&) = delete;
     FriedelKellerLibseq& operator=(const FriedelKellerLibseq&) = delete;
 
+    // Calls upstream random_restart(), reusing its arrays and rewinding.
+    // Upstream construction already generates an initial scrambling.
+    void randomize();
+    // Affects future randomizations only. Upstream uses the process-global
+    // drand48 RNG and the low 32 seed bits; instances share that RNG state.
+    void reseed(std::uint64_t seed);
+    void reset(); // Rewinds the current scrambling without consuming randomness.
+
     double coordinate(unsigned int j) const;
     void next();
 

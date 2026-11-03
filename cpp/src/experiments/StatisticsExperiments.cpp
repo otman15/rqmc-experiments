@@ -5,12 +5,14 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
 #include "BurleyQuantLib.h"
 #include "FriedelKellerLibseq.h"
 #include "HelmerStochasticSobol.h"
+#include "NewCachedNusPointSet.h"
 #include "PbrtFastOwenScrambler.h"
 #include "PbrtOwenScrambler.h"
 #include "AdaptiveRegularTiles.h"
@@ -26,7 +28,7 @@ enum class Method
     HelmerStochasticSobol
 };
 
-template <typename Sequence>
+template <typename Sequence, bool ReuseStorage = false>
 void runStatisticsForMethod(
     const std::string& methodName,
     const std::vector<std::pair<std::string, std::string>>& models,
@@ -36,19 +38,29 @@ void runStatisticsForMethod(
     long seed,
     const std::filesystem::path& outputDir)
 {
+    if constexpr (ReuseStorage)
+        std::cout << methodName
+                  << ": seed once per run; continuous RNG across replications. "
+                     "CPU phase totals cover all m replications.\n";
     for (const auto& [modelName, model] : models)
     {
         for (unsigned int s : sValues)
         {
             for (unsigned int k : kValues)
             {
-                const auto result =
-                    runRqmcReplications<Sequence>(
-                        model,
-                        k,
-                        s,
-                        statisticsM,
-                        seed);
+                const auto result = [&]
+                {
+                    if constexpr (ReuseStorage)
+                        return runPreparedRqmcReplications(model, s, statisticsM, [=]
+                        {
+                            if constexpr (std::is_same_v<Sequence, HelmerStochasticSobol>)
+                                return Sequence(s, k, seed, Sequence::Initialization::PrepareOnly);
+                            else
+                                return Sequence(s, k, seed);
+                        });
+                    else
+                        return runRqmcReplications<Sequence>(model, k, s, statisticsM, seed);
+                }();
 
                 const double avg =
                     mean(result.estimates);
@@ -75,11 +87,15 @@ void runStatisticsForMethod(
                     << ", variance=" << variance
                     << ", skewness=" << skew
                     << ", excess kurtosis=" << kurtosis
-                    << ", time="
                     << std::fixed
-                    << std::setprecision(6)
-                    << result.elapsedTimeSeconds
-                    << " seconds\n";
+                    << std::setprecision(6);
+                if constexpr (ReuseStorage)
+                    std::cout << ", preparation CPU(s)=" << result.preparationTimeSeconds
+                              << ", scrambling CPU(s), total over m=" << result.scramblingTimeSeconds
+                              << ", evaluation CPU(s), total over m=" << result.evaluationTimeSeconds
+                              << ", experiment CPU(s), total=" << result.elapsedTimeSeconds << '\n';
+                else
+                    std::cout << ", time=" << result.elapsedTimeSeconds << " seconds\n";
 
                 std::vector<double> sortedEstimates =
                     result.estimates;
@@ -119,8 +135,8 @@ void runStatisticsForMethod(
 
 int main()
 {
-    // const std::filesystem::path outputDir = "cpp-results/dat";
-    const std::filesystem::path outputDir =  "/mnt/c/Users/cherrato/Dropbox/Nus-comparisons/all-methods/dat";
+    const std::filesystem::path outputDir = "cpp-results/dat";
+    // const std::filesystem::path outputDir =  "/mnt/c/Users/cherrato/Dropbox/Nus-comparisons/all-methods/dat";
 
     std::filesystem::create_directories(outputDir);
 
@@ -183,7 +199,7 @@ int main()
         seed,
         outputDir);
 
-    runStatisticsForMethod<HelmerStochasticSobol>(
+    runStatisticsForMethod<HelmerStochasticSobol, true>(
         "Helmer-Stochastic-Sobol",
         models,
         sValues,
@@ -191,7 +207,16 @@ int main()
         statisticsM,
         seed,
         outputDir);
-        
+
+    runStatisticsForMethod<NewCachedNusPointSet, true>(
+        "NewCachedNusPointSet",
+        models,
+        sValues,
+        kValues,
+        statisticsM,
+        seed,
+        outputDir);
+
     runStatisticsForMethod<AdaptiveRegularTiles>(
     "Adaptive-Regular-Tiles",
     models,

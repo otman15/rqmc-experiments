@@ -25,6 +25,23 @@ FriedelKellerLibseq::FriedelKellerLibseq(
 
 FriedelKellerLibseq::~FriedelKellerLibseq() = default;
 
+void FriedelKellerLibseq::randomize()
+{
+    sequence_->random_restart();
+    currentIndex_ = 0;
+}
+
+void FriedelKellerLibseq::reseed(std::uint64_t seed)
+{
+    srand48(static_cast<long>(static_cast<std::uint32_t>(seed)));
+}
+
+void FriedelKellerLibseq::reset()
+{
+    sequence_->restart();
+    currentIndex_ = 0;
+}
+
 double FriedelKellerLibseq::coordinate(unsigned int j) const
 {
     return (*sequence_)[j];
