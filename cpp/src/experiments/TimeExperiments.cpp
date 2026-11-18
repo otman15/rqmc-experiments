@@ -181,8 +181,7 @@ int main()
 
     const long seed = 20171215;
     const unsigned int numRuns = 11;
-/*
-    runTimingForMethod<FriedelKellerLibseq>(
+    runTimingForMethod<FriedelKellerLibseq, true>(
         "Friedel-Keller/libseq",
         "friedel-keller-libseq",
         models,
@@ -193,6 +192,7 @@ int main()
         numRuns,
         outputDir);
 
+/*
     runTimingForMethod<BurleyQuantLib>(
         "Burley/QuantLib",
         "burley-quantlib",

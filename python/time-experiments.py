@@ -137,8 +137,8 @@ def run_statistics_experiments(
 
 
 def main():
-    # timing_output_dir = Path(__file__).resolve().parent / "py-results" #path("path/")
-    timing_output_dir = Path("/mnt/c/Users/cherrato/Dropbox/Nus-comparisons/all-methods/") #Path(__file__).resolve().parent / "py-results"
+    timing_output_dir = Path(__file__).resolve().parent / "py-results" #path("path/")
+    # timing_output_dir = Path("/mnt/c/Users/cherrato/Dropbox/Nus-comparisons/all-methods/") #Path(__file__).resolve().parent / "py-results"
     statistics_output_dir = timing_output_dir / "dat"
     TIMING = "TIMING"
     STATISTICS = "STATISTICS"
