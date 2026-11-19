@@ -215,32 +215,48 @@ int main()
                      "with matching point order.\n";
 
         std::vector<MethodResult> results;
-        results.reserve(5);
+        results.reserve(6);
         // Comment/uncomment a method call to select which methods to run.
 
-
+        // Adapted Helmer generation: upstream PCG32, seeded by this experiment;
+        // Sobol using the Joe-Kuo/PBRT-derived XOR tables, native point order.
         results.push_back(runMethod("HelmerStochasticSobol", [=]
         {
             return HelmerStochasticSobol(s, k, seed,
                 HelmerStochasticSobol::Initialization::PrepareOnly);
         }, model, s, m, seed, warmup));
 
+        // Original upstream generation: native PCG32 with automatic seeding
+        // on each call; the same Sobol tables. The printed seed is not used.
         results.push_back(runMethod("Helmer-native", [=]
         {
             return HelmerNativeSobol(s, k);
         }, model, s, m, seed, warmup));
 
+        // Parent-traversal NUS: sscpp MWC64k3a2, seeded via SplitMix64 expansion;
+        // PBRT Joe-Kuo Sobol matrices, 32 output bits, Gray-code point order.
         results.push_back(runMethod("NewCachedNusPointSet", [=]
         {
             return NewCachedNusPointSet(s, k, seed); // Prepares only; 32 output bits.
         }, model, s, m, seed, warmup));
 
+        // The same NewCached NUS algorithm and PBRT Joe-Kuo Sobol points as
+        // above, using Helmer's PCG32(seed, stream=0) instead of MWC64k3a2.
+        results.push_back(runMethod("NewCachedNusPointSet-PCG32", [=]
+        {
+            return NewCachedNusPointSet(s, k, seed, NewCachedNusPointSet::Rng::Pcg32);
+        }, model, s, m, seed, warmup));
+
+        // Sorted-traversal NUS: drand48; libseq's 32-bit Niederreiter net,
+        // converted to match libseq's original point order.
         results.push_back(runMethod("CachedNUSPointSet", [=]
         {
             return CachedNUSPointSet(libseqNiederreiterNet(s, k),
                 static_cast<std::uint64_t>(seed));
         }, model, s, m, seed, warmup));
 
+        // Original libseq base-2 NUS: native drand48 and Niederreiter net;
+        // 32 output bits, with preparation/storage reused across replications.
         results.push_back(runMethod("Friedel-Keller/libseq", [=]
         {
             return FriedelKellerLibseq(s, k, seed);

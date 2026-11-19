@@ -365,6 +365,10 @@ target_include_directories(new_cached_nus PUBLIC
     ${NEW_CACHED_NUS_ADAPTER_DIR}
 )
 
+target_include_directories(new_cached_nus PRIVATE
+    ${HELMER_DIR}/sampling
+)
+
 target_link_libraries(new_cached_nus PRIVATE
     pbrt_sobol_core
     sscpp_mwc64k3a2

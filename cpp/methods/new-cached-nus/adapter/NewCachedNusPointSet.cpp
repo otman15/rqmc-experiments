@@ -11,9 +11,12 @@
 #include <cstring>
 #include <limits>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
+#include <variant>
 
 #include "PbrtSobolCore.h"
+#include "rng.h"
 #include "sscpp/rng/mwc64k3a2.hpp"
 
 namespace
@@ -93,16 +96,60 @@ sscpp::rng::MWC64k3a2::Seed mwcSeed(std::uint64_t seed)
 
 struct NewCachedNusPointSet::RandomState
 {
-    explicit RandomState(std::uint64_t seed)
+    using Engine = std::variant<sscpp::rng::MWC64k3a2, sampling::RNG>;
+
+    static Engine makeEngine(std::uint64_t seed, Rng kind)
     {
-        rng.set_seed(mwcSeed(seed));
+        switch (kind)
+        {
+        case Rng::Mwc64k3a2:
+        {
+            sscpp::rng::MWC64k3a2 rng;
+            rng.set_seed(mwcSeed(seed));
+            return Engine(std::in_place_type<sscpp::rng::MWC64k3a2>, std::move(rng));
+        }
+        case Rng::Pcg32:
+            return Engine(std::in_place_type<sampling::RNG>, seed);
+        }
+        throw std::invalid_argument("Unknown NewCachedNusPointSet RNG");
     }
-    sscpp::rng::MWC64k3a2 rng;
+
+    RandomState(std::uint64_t seed, Rng kind) : engine(makeEngine(seed, kind)) {}
+
+    template <typename Generator>
+    static std::uint64_t word(Generator& rng, unsigned int bits)
+    {
+        if constexpr (std::is_same_v<Generator, sscpp::rng::MWC64k3a2>)
+            return static_cast<std::uint64_t>(rng.next_bits_long(static_cast<int>(bits)));
+        else
+        {
+            const std::uint64_t first = rng.GetUniformInt();
+            if (bits <= 32)
+                return first >> (32 - bits);
+            const std::uint64_t second = rng.GetUniformInt();
+            return ((first << 32) | second) >> (64 - bits);
+        }
+    }
+
+    void reseed(std::uint64_t seed)
+    {
+        std::visit([seed](auto& rng)
+        {
+            using Generator = std::decay_t<decltype(rng)>;
+            if constexpr (std::is_same_v<Generator, sscpp::rng::MWC64k3a2>)
+                rng.set_seed(mwcSeed(seed));
+            else
+                rng = sampling::RNG(seed);
+        }, engine);
+    }
+
+    Engine engine;
 };
 
 NewCachedNusPointSet::NewCachedNusPointSet(
     const DigitalNet& net,
-    std::uint64_t seed)
+    std::uint64_t seed,
+    Rng rng)
 {
     static_assert(std::numeric_limits<double>::is_iec559 &&
                   std::numeric_limits<double>::digits == 53,
@@ -161,7 +208,7 @@ NewCachedNusPointSet::NewCachedNusPointSet(
     firstDiffMasks_.resize(maskCount);
     coordinates_.resize(coordinateCount, 0.0);
     scrambledBits_.resize(n);
-    random_ = std::make_unique<RandomState>(seed);
+    random_ = std::make_unique<RandomState>(seed, rng);
     prepare(net);
 }
 
@@ -189,8 +236,9 @@ NewCachedNusPointSet::DigitalNet NewCachedNusPointSet::sobolNet(
 NewCachedNusPointSet::NewCachedNusPointSet(
     unsigned int s,
     unsigned int k,
-    long seed)
-    : NewCachedNusPointSet(sobolNet(s, k), static_cast<std::uint64_t>(seed))
+    long seed,
+    Rng rng)
+    : NewCachedNusPointSet(sobolNet(s, k), static_cast<std::uint64_t>(seed), rng)
 {
 }
 
@@ -281,22 +329,37 @@ void NewCachedNusPointSet::prepare(const DigitalNet& net)
 
 std::uint64_t NewCachedNusPointSet::randomWord()
 {
-    return static_cast<std::uint64_t>(
-        random_->rng.next_bits_long(static_cast<int>(outputBits_)));
+    return std::visit([this](auto& rng)
+    {
+        return RandomState::word(rng, outputBits_);
+    }, random_->engine);
 }
 
 void NewCachedNusPointSet::randomize()
+{
+    // Dispatch once, then compile the same scrambling loop for each RNG.
+    std::visit([this](auto& rng)
+    {
+        randomizeWith([this, &rng]
+        {
+            return RandomState::word(rng, outputBits_);
+        });
+    }, random_->engine);
+}
+
+template <typename NextWord>
+void NewCachedNusPointSet::randomizeWith(NextWord nextWord)
 {
     for (unsigned int j = 0; j < dimension_; ++j)
     {
         const auto offset = static_cast<std::size_t>(j) * numPoints_;
         const auto maskOffset = static_cast<std::size_t>(j) * (numPoints_ - 1);
-        auto z = randomWord();
+        auto z = nextWord();
         scrambledBits_[0] = z;
         coordinates_[offset] = static_cast<double>(z) * normFactor_ + 0x1p-55;
         for (std::size_t i = 1; i < numPoints_; ++i)
         {
-            const auto word = randomWord(); // Also consumed for duplicates.
+            const auto word = nextWord(); // Also consumed for duplicates.
             const auto mask = firstDiffMasks_[maskOffset + i - 1];
             const auto lowerMask = mask >> 1;
             const auto firstDiffBit = mask ^ lowerMask;
@@ -313,7 +376,7 @@ void NewCachedNusPointSet::randomize()
 
 void NewCachedNusPointSet::reseed(std::uint64_t seed)
 {
-    random_->rng.set_seed(mwcSeed(seed));
+    random_->reseed(seed);
 }
 
 double NewCachedNusPointSet::getCoordinate(std::uint64_t i, unsigned int j) const

@@ -12,6 +12,8 @@
 class NewCachedNusPointSet
 {
 public:
+    enum class Rng { Mwc64k3a2, Pcg32 };
+
     struct DigitalNet
     {
         std::uint64_t numPoints;
@@ -26,25 +28,30 @@ public:
 
     // Requires positive Java signed-32-bit sizes, precision 1..62, and enough
     // columns for the point count. Input matrices are not retained.
-    // Expands the scalar seed with three SplitMix64 draws into MWC64k3a2's
-    // {x3, x2, x1} state words, with carry initialized to zero.
-    NewCachedNusPointSet(const DigitalNet& net, std::uint64_t seed);
+    // MWC64k3a2 (default): expands the scalar seed with three SplitMix64 draws
+    // into {x3, x2, x1}, with zero carry. PCG32: uses Helmer's seeded RNG and
+    // its default stream selector (zero), without seed expansion.
+    NewCachedNusPointSet(const DigitalNet& net, std::uint64_t seed,
+                         Rng rng = Rng::Mwc64k3a2);
     // Prepares 2^k PBRT Sobol points in Gray-code order, with 32 output bits.
     // Requires k < 31 and a supported PBRT dimension. Signed seeds convert
     // modulo 2^64; they are not restricted to the PBRT scramblers' int seeds.
-    NewCachedNusPointSet(unsigned int s, unsigned int k, long seed);
+    NewCachedNusPointSet(unsigned int s, unsigned int k, long seed,
+                         Rng rng = Rng::Mwc64k3a2);
     ~NewCachedNusPointSet();
 
     NewCachedNusPointSet(const NewCachedNusPointSet&) = delete;
     NewCachedNusPointSet& operator=(const NewCachedNusPointSet&) = delete;
 
-    // Allocates nothing, consumes one MWC64k3a2 64-bit draw per point per
-    // dimension (including duplicates), retains its high outputBits (1..62),
-    // and resets iteration. There is no reservoir. Matching Java/sscpp output
-    // requires identical matrices, MWC seed state, and random-word assignment.
+    // Allocates nothing and resets iteration. MWC uses one 64-bit draw per
+    // point/dimension, retaining its high outputBits. PCG retains the high bits
+    // of one 32-bit draw for outputBits <= 32, or concatenates two draws
+    // (first draw high) for 33..62 bits. Both consume draws for duplicates,
+    // without a reservoir.
+    // RNG dispatch occurs once per scrambling pass, outside the point loops.
     void randomize();
-    // Uses the constructor's seed expansion. Changes future randomness only;
-    // preserves the cache and iteration position.
+    // Uses the selected RNG's constructor seeding rule. Changes future
+    // randomness only; preserves the cache and iteration position.
     void reseed(std::uint64_t seed);
 
     // Java's z * 2^(-outputBits) + 2^(-55) conversion can round distinct
@@ -62,6 +69,8 @@ private:
     struct RandomState;
     static DigitalNet sobolNet(unsigned int s, unsigned int k);
     void prepare(const DigitalNet& net);
+    template <typename NextWord>
+    void randomizeWith(NextWord nextWord);
     std::uint64_t randomWord();
 
     std::size_t numPoints_ = 0;
