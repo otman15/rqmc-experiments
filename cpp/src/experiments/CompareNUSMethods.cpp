@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "C_matrix.h"
 #include "CachedNUSPointSet.h"
 #include "FriedelKellerLibseq.h"
 #include "HelmerStochasticSobol.h"
@@ -14,6 +15,44 @@
 
 namespace
 {
+CachedNUSPointSet::DigitalNet libseqNiederreiterNet(unsigned int s, unsigned int k)
+{
+    if (s == 0 || k >= 31)
+        throw std::invalid_argument("Require s > 0 and k < 31 for the Niederreiter net");
+
+    Ring ring(2);
+    char generator[] = "Niederreiter";
+    C_matrix matrix(&ring, generator, s);
+    constexpr unsigned int outputBits = 32;
+    CachedNUSPointSet::DigitalNet net{
+        std::uint64_t{1} << k, s, k, outputBits,
+        std::vector<std::uint64_t>(static_cast<std::size_t>(s) * k)};
+
+    for (unsigned int j = 0; j < s; ++j)
+    {
+        std::uint64_t grayColumn = 0;
+        for (unsigned int c = 0; c < k; ++c)
+        {
+            // Pack rows from most to least significant bit, exactly as
+            // libseq's DigitalSequence_base_2::transfer_C() does.
+            std::uint64_t binaryColumn = 0;
+            for (unsigned int row = 0; row < outputBits; ++row)
+            {
+                binaryColumn <<= 1;
+                if (row < matrix.NumDigits && c < matrix.NumDigits)
+                    binaryColumn |= matrix.query(j, row, c);
+            }
+
+            // CachedNUSPointSet enumerates Gray-code indices. The XOR of
+            // binary columns 0..c converts its basis to libseq's binary-index
+            // point order: D * Gray(i) = C * i.
+            grayColumn ^= binaryColumn;
+            net.columns[static_cast<std::size_t>(j) * k + c] = grayColumn;
+        }
+    }
+    return net;
+}
+
 struct MethodResult
 {
     std::string name;
@@ -143,10 +182,10 @@ int main()
     //         smoothgauss, piecelingauss, indsumnormal.
     const std::string model = "mc2";
     const unsigned int s = 10;        // Dimension (HCK supports 1..64).
-    const unsigned int k = 20;        // Number of points n = 2^k; k < 31.
-    const unsigned int m = 100;       // Measured replications.
+    const unsigned int k = 16;        // Number of points n = 2^k; k < 31.
+    const unsigned int m = 1000;       // Measured replications.
     const long seed = 20171215;
-    const unsigned int warmup = 10;   // Discarded replications; zero disables warmup.
+    const unsigned int warmup = 100;   // Discarded replications; zero disables warmup.
     // Variance requires m >= 2, skewness m >= 3, and excess kurtosis m >= 4;
     // the existing statistics functions print NaN when these are undefined.
 
@@ -157,6 +196,8 @@ int main()
         std::cout << "model=" << model << ", s=" << s << ", k=" << k
                   << ", n=" << (std::uint64_t{1} << k) << ", m=" << m
                   << ", warmup=" << warmup << ", seed=" << seed << '\n';
+        std::cout << "CachedNUSPointSet uses libseq's 32-bit Niederreiter net "
+                     "with matching point order.\n";
 
         std::vector<MethodResult> results;
         results.reserve(4);
@@ -176,7 +217,8 @@ int main()
 
         results.push_back(runMethod("CachedNUSPointSet", [=]
         {
-            return CachedNUSPointSet(s, k, seed); // Same 32-bit PBRT Sobol input and drand48 as NewCached.
+            return CachedNUSPointSet(libseqNiederreiterNet(s, k),
+                static_cast<std::uint64_t>(seed));
         }, model, s, m, seed, warmup));
 
         results.push_back(runMethod("Friedel-Keller/libseq", [=]

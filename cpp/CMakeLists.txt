@@ -384,6 +384,10 @@ target_link_libraries(cached_nus PRIVATE
 
 # Single-configuration comparison with editable settings and a console report.
 add_executable(compare_nus_methods src/experiments/CompareNUSMethods.cpp)
+target_include_directories(compare_nus_methods PRIVATE
+    ${LIBSEQ_DIR}
+    ${FRIEDEL_KELLER_ADAPTER_DIR}/compat
+)
 target_link_libraries(compare_nus_methods PRIVATE
     rqmc_common
     cached_nus
