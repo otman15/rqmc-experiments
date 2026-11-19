@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "CachedNUSPointSet.h"
 #include "FriedelKellerLibseq.h"
 #include "HelmerStochasticSobol.h"
 #include "NewCachedNusPointSet.h"
@@ -58,8 +59,8 @@ MethodResult runMethod(
     result.estimates.reserve(m);
     std::vector<double> x(s);
 
-    // Measure the constructor's complete setup work. NUS and HCK prepare only;
-    // libseq's mandatory initial scrambling is included and noted in the report.
+    // Measure the constructor's complete setup work. Both NUS variants and HCK
+    // prepare only; libseq's mandatory initial scrambling is included and reported.
     auto start = RqmcDetail::processCpuTime();
     auto sequence = prepare();
     result.setupSeconds = RqmcDetail::secondsBetween(
@@ -141,11 +142,11 @@ int main()
     // Models: gaussian, mc2, sumueu, smoothperb4, polynomial, oscillatory,
     //         smoothgauss, piecelingauss, indsumnormal.
     const std::string model = "mc2";
-    const unsigned int s = 2;        // Dimension (HCK supports 1..64).
-    const unsigned int k = 16;        // Number of points n = 2^k; k < 31.
-    const unsigned int m = 1024;       // Measured replications.
+    const unsigned int s = 10;        // Dimension (HCK supports 1..64).
+    const unsigned int k = 20;        // Number of points n = 2^k; k < 31.
+    const unsigned int m = 100;       // Measured replications.
     const long seed = 20171215;
-    const unsigned int warmup = 1000;   // Discarded replications; zero disables warmup.
+    const unsigned int warmup = 10;   // Discarded replications; zero disables warmup.
     // Variance requires m >= 2, skewness m >= 3, and excess kurtosis m >= 4;
     // the existing statistics functions print NaN when these are undefined.
 
@@ -158,7 +159,7 @@ int main()
                   << ", warmup=" << warmup << ", seed=" << seed << '\n';
 
         std::vector<MethodResult> results;
-        results.reserve(3);
+        results.reserve(4);
         // Comment/uncomment a method call to select which methods to run.
 
 
@@ -171,6 +172,11 @@ int main()
         results.push_back(runMethod("NewCachedNusPointSet", [=]
         {
             return NewCachedNusPointSet(s, k, seed); // Prepares only; 32 output bits.
+        }, model, s, m, seed, warmup));
+
+        results.push_back(runMethod("CachedNUSPointSet", [=]
+        {
+            return CachedNUSPointSet(s, k, seed); // Same 32-bit PBRT Sobol input and drand48 as NewCached.
         }, model, s, m, seed, warmup));
 
         results.push_back(runMethod("Friedel-Keller/libseq", [=]

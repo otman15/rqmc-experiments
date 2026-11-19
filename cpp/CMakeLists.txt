@@ -363,10 +363,30 @@ target_link_libraries(test_rqmc_replications PRIVATE
 )
 add_test(NAME rqmc_replications COMMAND test_rqmc_replications)
 
+# ---------------------------------------------------------------------------
+# Cached NUS (sscpp sorted-order port)
+# ---------------------------------------------------------------------------
+
+set(CACHED_NUS_ADAPTER_DIR
+    ${CMAKE_CURRENT_SOURCE_DIR}/methods/cached-nus/adapter)
+
+add_library(cached_nus STATIC
+    ${CACHED_NUS_ADAPTER_DIR}/CachedNUSPointSet.cpp
+)
+
+target_include_directories(cached_nus PUBLIC
+    ${CACHED_NUS_ADAPTER_DIR}
+)
+
+target_link_libraries(cached_nus PRIVATE
+    pbrt_sobol_core
+)
+
 # Single-configuration comparison with editable settings and a console report.
 add_executable(compare_nus_methods src/experiments/CompareNUSMethods.cpp)
 target_link_libraries(compare_nus_methods PRIVATE
     rqmc_common
+    cached_nus
     new_cached_nus
     helmer_stochastic_sobol
     friedel_keller_libseq
