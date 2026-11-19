@@ -383,19 +383,10 @@ target_link_libraries(cached_nus PRIVATE
 )
 
 # Single-configuration comparison with editable settings and a console report.
-add_executable(compare_nus_methods
-    src/experiments/CompareNUSMethods.cpp
-    src/experiments/CompareNUSPcg32.cpp
-)
+add_executable(compare_nus_methods src/experiments/CompareNUSMethods.cpp)
 target_include_directories(compare_nus_methods PRIVATE
-    ${HELMER_DIR}/sampling
-)
-# Experimental RNG replacement is confined to this executable. GNU-compatible
-# ELF linker wrapping leaves libseq and CachedNUSPointSet upstream calls intact
-# in every other executable.
-target_link_options(compare_nus_methods PRIVATE
-    -Wl,--wrap=drand48
-    -Wl,--wrap=srand48
+    ${LIBSEQ_DIR}
+    ${FRIEDEL_KELLER_ADAPTER_DIR}/compat
 )
 target_link_libraries(compare_nus_methods PRIVATE
     rqmc_common
@@ -403,7 +394,6 @@ target_link_libraries(compare_nus_methods PRIVATE
     new_cached_nus
     helmer_stochastic_sobol
     friedel_keller_libseq
-    pbrt_sobol_core
 )
 
 # ---------------------------------------------------------------------------
