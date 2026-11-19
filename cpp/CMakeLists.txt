@@ -294,6 +294,23 @@ target_include_directories(helmer_stochastic_sobol PRIVATE
     ${HELMER_DIR}/sampling
 )
 
+# Separate timing method: compile upstream generation and its dependencies
+# without replacing RNGs or changing any upstream source.
+add_library(helmer_native_sobol STATIC
+    ${HELMER_ADAPTER_DIR}/HelmerNativeSobol.cpp
+    ${HELMER_DIR}/sampling/ssobol.cpp
+    ${HELMER_DIR}/sampling/bn_utils.cpp
+    ${HELMER_DIR}/sampling/shuffling.cpp
+)
+
+target_include_directories(helmer_native_sobol PUBLIC
+    ${HELMER_ADAPTER_DIR}
+)
+
+target_include_directories(helmer_native_sobol PRIVATE
+    ${HELMER_DIR}/sampling
+)
+
 add_executable(test_helmer_stochastic_sobol
     ${HELMER_ADAPTER_DIR}/test_adapter.cpp
 )
@@ -308,6 +325,7 @@ target_include_directories(test_helmer_stochastic_sobol PRIVATE
 
 target_link_libraries(time_experiments PRIVATE
     helmer_stochastic_sobol
+    helmer_native_sobol
 )
 
 target_link_libraries(statistics_experiments PRIVATE
@@ -321,6 +339,24 @@ target_link_libraries(statistics_experiments PRIVATE
 set(NEW_CACHED_NUS_ADAPTER_DIR
     ${CMAKE_CURRENT_SOURCE_DIR}/methods/new-cached-nus/adapter)
 
+set(SSCPP_MWC64K3A2_DIR
+    ${CMAKE_CURRENT_SOURCE_DIR}/methods/new-cached-nus/upstream/sscpp)
+
+# Compile the copied RNG by itself; the experiment and adapter remain C++17.
+add_library(sscpp_mwc64k3a2 STATIC
+    ${SSCPP_MWC64K3A2_DIR}/src/rng/mwc64k3a2.cpp
+)
+
+set_target_properties(sscpp_mwc64k3a2 PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
+)
+
+target_include_directories(sscpp_mwc64k3a2 PUBLIC
+    ${SSCPP_MWC64K3A2_DIR}/include
+)
+
 add_library(new_cached_nus STATIC
     ${NEW_CACHED_NUS_ADAPTER_DIR}/NewCachedNusPointSet.cpp
 )
@@ -329,12 +365,9 @@ target_include_directories(new_cached_nus PUBLIC
     ${NEW_CACHED_NUS_ADAPTER_DIR}
 )
 
-target_include_directories(new_cached_nus PRIVATE
-    ${HELMER_DIR}/sampling
-)
-
 target_link_libraries(new_cached_nus PRIVATE
     pbrt_sobol_core
+    sscpp_mwc64k3a2
 )
 
 add_executable(test_new_cached_nus
@@ -393,6 +426,7 @@ target_link_libraries(compare_nus_methods PRIVATE
     cached_nus
     new_cached_nus
     helmer_stochastic_sobol
+    helmer_native_sobol
     friedel_keller_libseq
 )
 

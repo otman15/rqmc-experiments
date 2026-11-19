@@ -3,11 +3,13 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "C_matrix.h"
 #include "CachedNUSPointSet.h"
 #include "FriedelKellerLibseq.h"
+#include "HelmerNativeSobol.h"
 #include "HelmerStochasticSobol.h"
 #include "NewCachedNusPointSet.h"
 #include "RqmcReplications.h"
@@ -61,6 +63,7 @@ struct MethodResult
     double scramblingSeconds = 0.0;
     double integrationSeconds = 0.0;
     bool constructorScrambles = false;
+    bool nativeSeeding = false;
 };
 
 template <typename Sequence>
@@ -104,6 +107,8 @@ MethodResult runMethod(
     auto sequence = prepare();
     result.setupSeconds = RqmcDetail::secondsBetween(
         start, RqmcDetail::processCpuTime());
+    constexpr bool nativeSeeding = std::is_same_v<decltype(sequence), HelmerNativeSobol>;
+    result.nativeSeeding = nativeSeeding;
 
     for (unsigned int r = 0; r < warmup; ++r)
     {
@@ -111,9 +116,10 @@ MethodResult runMethod(
         (void) integrate(sequence, model, x);
     }
 
-    // Seed once per measured pass and advance the same RNG across replications.
-    // Reseeding discards warmup's RNG advancement without rebuilding anything.
-    sequence.reseed(static_cast<std::uint64_t>(seed));
+    // Seeded adapters replay the printed seed; the native function initializes
+    // its own RNG on every call and exposes no seeding API.
+    if constexpr (!nativeSeeding)
+        sequence.reseed(static_cast<std::uint64_t>(seed));
     start = RqmcDetail::processCpuTime();
     for (unsigned int r = 0; r < m; ++r)
     {
@@ -123,9 +129,10 @@ MethodResult runMethod(
     result.integrationSeconds = RqmcDetail::secondsBetween(
         start, RqmcDetail::processCpuTime());
 
-    // A separate pass, replaying the same stream, measures cache generation
-    // without function evaluation. It reuses the same prepared object/storage.
-    sequence.reseed(static_cast<std::uint64_t>(seed));
+    // A separate pass measures generation without function evaluation. Seeded
+    // adapters replay the integration stream; native calls use fresh seeds.
+    if constexpr (!nativeSeeding)
+        sequence.reseed(static_cast<std::uint64_t>(seed));
     start = RqmcDetail::processCpuTime();
     for (unsigned int r = 0; r < m; ++r)
         sequence.randomize();
@@ -154,7 +161,7 @@ void printReport(const std::vector<MethodResult>& results, unsigned int m)
     std::cout << "\nProcess CPU seconds; scrambling and integration are totals over " << m << " replications.\n"
               << "Setup includes construction, allocations, preprocessing, and any automatic initial scrambling.\n"
               << "Total = setup + scrambling. Integration includes scrambling and function evaluation.\n"
-              << "Integration excludes setup and warmup. Both measured passes start from the printed seed.\n"
+              << "Integration excludes setup and warmup. Seeded methods replay the printed seed in both passes.\n"
               << std::left << std::setw(26) << "Method" << std::right
               << std::setw(16) << "Setup"
               << std::setw(16) << "Scrambling"
@@ -168,10 +175,18 @@ void printReport(const std::vector<MethodResult>& results, unsigned int m)
                   << std::setw(16) << result.setupSeconds + result.scramblingSeconds
                   << std::setw(20) << result.integrationSeconds << '\n';
     for (const auto& result : results)
+    {
         if (result.constructorScrambles)
             std::cout << result.name << ": setup includes upstream's mandatory initial scrambling; "
                       << "each measured pass still performs " << m << " fresh randomizations.\n"
                       << "This method uses libseq's Niederreiter net and native drand48 RNG.\n";
+        if (result.nativeSeeding)
+            std::cout << result.name << ": directly calls upstream GetStochasticSobolSamples "
+                      << "with shuffle=false, candidates=1, and owen=false.\n"
+                      << "Its native PCG32 seeds itself on every call; the printed seed does not apply.\n"
+                      << "Scrambling includes native RNG initialization and temporary allocations; "
+                      << "the output buffer is reused. The two measured passes use different random samples.\n";
+    }
 }
 }
 
@@ -182,8 +197,8 @@ int main()
     //         smoothgauss, piecelingauss, indsumnormal.
     const std::string model = "mc2";
     const unsigned int s = 10;        // Dimension (HCK supports 1..64).
-    const unsigned int k = 18;        // Number of points n = 2^k; k < 31.
-    const unsigned int m = 1000;       // Measured replications.
+    const unsigned int k = 20;        // Number of points n = 2^k; k < 31.
+    const unsigned int m = 100;       // Measured replications.
     const long seed = 20171215;
     const unsigned int warmup = 100;   // Discarded replications; zero disables warmup.
     // Variance requires m >= 2, skewness m >= 3, and excess kurtosis m >= 4;
@@ -200,7 +215,7 @@ int main()
                      "with matching point order.\n";
 
         std::vector<MethodResult> results;
-        results.reserve(4);
+        results.reserve(5);
         // Comment/uncomment a method call to select which methods to run.
 
 
@@ -208,6 +223,11 @@ int main()
         {
             return HelmerStochasticSobol(s, k, seed,
                 HelmerStochasticSobol::Initialization::PrepareOnly);
+        }, model, s, m, seed, warmup));
+
+        results.push_back(runMethod("Helmer-native", [=]
+        {
+            return HelmerNativeSobol(s, k);
         }, model, s, m, seed, warmup));
 
         results.push_back(runMethod("NewCachedNusPointSet", [=]

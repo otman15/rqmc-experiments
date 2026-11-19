@@ -8,12 +8,13 @@
 
 #include <array>
 #include <cmath>
+#include <cstring>
 #include <limits>
 #include <stdexcept>
 #include <utility>
 
 #include "PbrtSobolCore.h"
-#include "rng.h"
+#include "sscpp/rng/mwc64k3a2.hpp"
 
 namespace
 {
@@ -65,12 +66,38 @@ std::uint64_t highestOneBit(std::uint64_t value)
     return value - (value >> 1);
 }
 
+std::uint64_t splitMix64(std::uint64_t& state)
+{
+    auto word = (state += 0x9e3779b97f4a7c15ULL);
+    word = (word ^ (word >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    word = (word ^ (word >> 27)) * 0x94d049bb133111ebULL;
+    return word ^ (word >> 31);
+}
+
+sscpp::rng::MWC64k3a2::Seed mwcSeed(std::uint64_t seed)
+{
+    // Keep the scalar-seed API: expand into {x3, x2, x1}, with zero carry.
+    // SplitMix64 is a permutation, so these three consecutive outputs cannot
+    // all be zero. Zero carry also excludes MWC's all-ones/max-carry state.
+    sscpp::rng::MWC64k3a2::Seed words{};
+    for (unsigned int i = 0; i < 3; ++i)
+    {
+        const auto word = splitMix64(seed);
+        // Preserve all 64 bits in Java's signed-long seed representation.
+        std::memcpy(&words[i], &word, sizeof(word));
+    }
+    return words;
+}
+
 }
 
 struct NewCachedNusPointSet::RandomState
 {
-    explicit RandomState(std::uint64_t seed) : rng(seed) {}
-    sampling::RNG rng;
+    explicit RandomState(std::uint64_t seed)
+    {
+        rng.set_seed(mwcSeed(seed));
+    }
+    sscpp::rng::MWC64k3a2 rng;
 };
 
 NewCachedNusPointSet::NewCachedNusPointSet(
@@ -254,11 +281,8 @@ void NewCachedNusPointSet::prepare(const DigitalNet& net)
 
 std::uint64_t NewCachedNusPointSet::randomWord()
 {
-    const std::uint64_t first = random_->rng.GetUniformInt();
-    if (outputBits_ <= 32)
-        return first >> (32 - outputBits_);
-    const std::uint64_t second = random_->rng.GetUniformInt();
-    return ((first << 32) | second) >> (64 - outputBits_);
+    return static_cast<std::uint64_t>(
+        random_->rng.next_bits_long(static_cast<int>(outputBits_)));
 }
 
 void NewCachedNusPointSet::randomize()
@@ -289,7 +313,7 @@ void NewCachedNusPointSet::randomize()
 
 void NewCachedNusPointSet::reseed(std::uint64_t seed)
 {
-    random_->rng = sampling::RNG(seed);
+    random_->rng.set_seed(mwcSeed(seed));
 }
 
 double NewCachedNusPointSet::getCoordinate(std::uint64_t i, unsigned int j) const

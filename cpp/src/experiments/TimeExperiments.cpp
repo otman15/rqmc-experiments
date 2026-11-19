@@ -10,6 +10,7 @@
 
 #include "BurleyQuantLib.h"
 #include "FriedelKellerLibseq.h"
+#include "HelmerNativeSobol.h"
 #include "HelmerStochasticSobol.h"
 #include "NewCachedNusPointSet.h"
 #include "PbrtFastOwenScrambler.h"
@@ -40,10 +41,18 @@ void runTimingForMethod(
     const std::filesystem::path& outputDir)
 {
     if constexpr (ReuseStorage)
+    {
         std::cout << methodName
-                  << ": seed once per run; continuous RNG across replications. "
-                  << "CPU phase totals cover all m replications; medians are over "
+                  << ": ";
+        if constexpr (std::is_same_v<Sequence, HelmerNativeSobol>)
+            std::cout << "direct upstream generation with shuffle=false, candidates=1, and owen=false. "
+                      << "Native RNG initialization and temporary allocations are timed on every call; "
+                      << "the output buffer is reused. The experiment seed does not apply. ";
+        else
+            std::cout << "seed once per run; continuous RNG across replications. ";
+        std::cout << "CPU phase totals cover all m replications; medians are over "
                   << numRuns << " runs and are computed independently.\n";
+    }
     for (const auto& [modelName, model] : models)
     {
         const std::filesystem::path outputFile =
@@ -98,7 +107,9 @@ void runTimingForMethod(
                             if constexpr (ReuseStorage)
                                 return runPreparedRqmcReplications(model, s, m, [=]
                                 {
-                                    if constexpr (std::is_same_v<Sequence, HelmerStochasticSobol>)
+                                    if constexpr (std::is_same_v<Sequence, HelmerNativeSobol>)
+                                        return Sequence(s, k);
+                                    else if constexpr (std::is_same_v<Sequence, HelmerStochasticSobol>)
                                         return Sequence(s, k, runSeed, Sequence::Initialization::PrepareOnly);
                                     else
                                         return Sequence(s, k, runSeed);

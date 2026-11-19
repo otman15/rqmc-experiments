@@ -1,0 +1,11 @@
+Copied from https://github.com/otman15/sscpp
+Commit: a82bdcf9fcacdd003f4539ab6538a8762179f60e
+
+This directory contains the unchanged MWC64k3a2 implementation, its
+RandomStream interface, multiplication helper, and fixed jump constants.
+The source was copied from the local sscpp checkout; no external checkout
+is needed to build this project. See LICENSE.md for the Apache 2.0 notice.
+
+Only src/rng/mwc64k3a2.cpp is compiled, as a separate C++20 target.
+The NewCachedNusPointSet adapter remains C++17 and maps its numeric seed
+into three SplitMix64 state words followed by a zero carry.
