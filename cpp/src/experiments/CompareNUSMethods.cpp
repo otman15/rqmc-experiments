@@ -182,7 +182,7 @@ int main()
     //         smoothgauss, piecelingauss, indsumnormal.
     const std::string model = "mc2";
     const unsigned int s = 10;        // Dimension (HCK supports 1..64).
-    const unsigned int k = 16;        // Number of points n = 2^k; k < 31.
+    const unsigned int k = 18;        // Number of points n = 2^k; k < 31.
     const unsigned int m = 1000;       // Measured replications.
     const long seed = 20171215;
     const unsigned int warmup = 100;   // Discarded replications; zero disables warmup.

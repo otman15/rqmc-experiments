@@ -8,12 +8,12 @@
 
 #include <array>
 #include <cmath>
-#include <cstdlib>
 #include <limits>
 #include <stdexcept>
 #include <utility>
 
 #include "PbrtSobolCore.h"
+#include "rng.h"
 
 namespace
 {
@@ -69,19 +69,8 @@ std::uint64_t highestOneBit(std::uint64_t value)
 
 struct NewCachedNusPointSet::RandomState
 {
-    // Match libseq's process-global drand48 stream and low-32-bit seeds.
-    explicit RandomState(std::uint64_t seed) { reseed(seed); }
-
-    void reseed(std::uint64_t seed)
-    {
-        srand48(static_cast<long>(static_cast<std::uint32_t>(seed)));
-    }
-
-    std::uint32_t nextWord()
-    {
-        // Same extraction as libseq's get_32_random_bits().
-        return static_cast<std::uint32_t>(drand48() * 0x1p32);
-    }
+    explicit RandomState(std::uint64_t seed) : rng(seed) {}
+    sampling::RNG rng;
 };
 
 NewCachedNusPointSet::NewCachedNusPointSet(
@@ -265,10 +254,10 @@ void NewCachedNusPointSet::prepare(const DigitalNet& net)
 
 std::uint64_t NewCachedNusPointSet::randomWord()
 {
-    const std::uint64_t first = random_->nextWord();
+    const std::uint64_t first = random_->rng.GetUniformInt();
     if (outputBits_ <= 32)
         return first >> (32 - outputBits_);
-    const std::uint64_t second = random_->nextWord();
+    const std::uint64_t second = random_->rng.GetUniformInt();
     return ((first << 32) | second) >> (64 - outputBits_);
 }
 
@@ -300,7 +289,7 @@ void NewCachedNusPointSet::randomize()
 
 void NewCachedNusPointSet::reseed(std::uint64_t seed)
 {
-    random_->reseed(seed);
+    random_->rng = sampling::RNG(seed);
 }
 
 double NewCachedNusPointSet::getCoordinate(std::uint64_t i, unsigned int j) const
