@@ -1,31 +1,53 @@
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
-#include "C_matrix.h"
 #include "CachedNUSPointSet.h"
 #include "FriedelKellerLibseq.h"
 #include "HelmerStochasticSobol.h"
 #include "NewCachedNusPointSet.h"
+#include "PbrtSobolCore.h"
 #include "RqmcReplications.h"
 #include "Statistics.h"
+#include "xor_values.h"
 
 namespace
 {
-CachedNUSPointSet::DigitalNet libseqNiederreiterNet(unsigned int s, unsigned int k)
+void verifyHelmerSobol(unsigned int s)
 {
-    if (s == 0 || k >= 31)
-        throw std::invalid_argument("Require s > 0 and k < 31 for the Niederreiter net");
+    if (s == 0 || s > static_cast<unsigned int>(sampling::MAX_SOBOL_DIM))
+        throw std::invalid_argument("Common Sobol comparison requires 1..64 dimensions");
 
-    Ring ring(2);
-    char generator[] = "Niederreiter";
-    C_matrix matrix(&ring, generator, s);
-    constexpr unsigned int outputBits = 32;
-    CachedNUSPointSet::DigitalNet net{
-        std::uint64_t{1} << k, s, k, outputBits,
+    // Helmer stores off-diagonal columns of the inverse Sobol matrix. Check
+    // C * (e_c XOR xor[c]) = e_c for all 32 columns, outside measured work.
+    for (unsigned int j = 0; j < s; ++j)
+        for (unsigned int c = 0; c < 32; ++c)
+            if (PbrtSobolCore::sobolInteger(
+                    (std::uint64_t{1} << c) ^ sampling::sobol_xors[j][c], j)
+                != (std::uint32_t{1} << (31 - c)))
+                throw std::runtime_error("Helmer and PBRT Sobol matrices do not match");
+}
+
+std::vector<std::uint32_t> sobolBinaryColumns(unsigned int s, unsigned int k)
+{
+    std::vector<std::uint32_t> columns(static_cast<std::size_t>(s) * k);
+    for (unsigned int j = 0; j < s; ++j)
+        for (unsigned int c = 0; c < k; ++c)
+            columns[static_cast<std::size_t>(j) * k + c] =
+                PbrtSobolCore::sobolInteger(std::uint64_t{1} << c, j);
+    return columns;
+}
+
+template <typename DigitalNet>
+DigitalNet commonSobolNet(unsigned int s, unsigned int k)
+{
+    const auto binaryColumns = sobolBinaryColumns(s, k);
+    DigitalNet net{
+        std::uint64_t{1} << k, s, k, 32,
         std::vector<std::uint64_t>(static_cast<std::size_t>(s) * k)};
 
     for (unsigned int j = 0; j < s; ++j)
@@ -33,20 +55,10 @@ CachedNUSPointSet::DigitalNet libseqNiederreiterNet(unsigned int s, unsigned int
         std::uint64_t grayColumn = 0;
         for (unsigned int c = 0; c < k; ++c)
         {
-            // Pack rows from most to least significant bit, exactly as
-            // libseq's DigitalSequence_base_2::transfer_C() does.
-            std::uint64_t binaryColumn = 0;
-            for (unsigned int row = 0; row < outputBits; ++row)
-            {
-                binaryColumn <<= 1;
-                if (row < matrix.NumDigits && c < matrix.NumDigits)
-                    binaryColumn |= matrix.query(j, row, c);
-            }
-
-            // CachedNUSPointSet enumerates Gray-code indices. The XOR of
-            // binary columns 0..c converts its basis to libseq's binary-index
-            // point order: D * Gray(i) = C * i.
-            grayColumn ^= binaryColumn;
+            // Both cached implementations enumerate Gray-code indices. The
+            // cumulative XOR converts their basis to the binary-index order
+            // used by Helmer's tables and libseq: D * Gray(i) = C * i.
+            grayColumn ^= binaryColumns[static_cast<std::size_t>(j) * k + c];
             net.columns[static_cast<std::size_t>(j) * k + c] = grayColumn;
         }
     }
@@ -170,8 +182,7 @@ void printReport(const std::vector<MethodResult>& results, unsigned int m)
     for (const auto& result : results)
         if (result.constructorScrambles)
             std::cout << result.name << ": setup includes upstream's mandatory initial scrambling; "
-                      << "each measured pass still performs " << m << " fresh randomizations.\n"
-                      << "This method uses libseq's Niederreiter net and native drand48 RNG.\n";
+                      << "each measured pass still performs " << m << " fresh randomizations.\n";
 }
 }
 
@@ -193,11 +204,17 @@ int main()
     {
         if (s == 0 || k >= 31 || m == 0)
             throw std::invalid_argument("Require s > 0, k < 31, and m > 0");
+        if (seed < 0 || static_cast<std::uint64_t>(seed) >
+                            std::numeric_limits<std::uint32_t>::max())
+            throw std::invalid_argument("Common RNG comparison requires a seed in 0..2^32-1");
+        verifyHelmerSobol(s);
         std::cout << "model=" << model << ", s=" << s << ", k=" << k
                   << ", n=" << (std::uint64_t{1} << k) << ", m=" << m
                   << ", warmup=" << warmup << ", seed=" << seed << '\n';
-        std::cout << "CachedNUSPointSet uses libseq's 32-bit Niederreiter net "
-                     "with matching point order.\n";
+        std::cout << "Experimental common inputs: Helmer PCG32 and PBRT Sobol matrices "
+                     "in binary-index order, verified against Helmer's tables.\n"
+                     "Libseq and CachedNUSPointSet receive PCG32 through their existing drand48 interface.\n"
+                     "Helmer retains native within-stratum jitter; the other methods use 32 output bits.\n";
 
         std::vector<MethodResult> results;
         results.reserve(4);
@@ -212,18 +229,20 @@ int main()
 
         results.push_back(runMethod("NewCachedNusPointSet", [=]
         {
-            return NewCachedNusPointSet(s, k, seed); // Prepares only; 32 output bits.
+            return NewCachedNusPointSet(
+                commonSobolNet<NewCachedNusPointSet::DigitalNet>(s, k),
+                static_cast<std::uint64_t>(seed));
         }, model, s, m, seed, warmup));
 
         results.push_back(runMethod("CachedNUSPointSet", [=]
         {
-            return CachedNUSPointSet(libseqNiederreiterNet(s, k),
+            return CachedNUSPointSet(commonSobolNet<CachedNUSPointSet::DigitalNet>(s, k),
                 static_cast<std::uint64_t>(seed));
         }, model, s, m, seed, warmup));
 
         results.push_back(runMethod("Friedel-Keller/libseq", [=]
         {
-            return FriedelKellerLibseq(s, k, seed);
+            return FriedelKellerLibseq(s, k, seed, sobolBinaryColumns(s, k));
         }, model, s, m, seed, warmup, true));
 
         printReport(results, m);

@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <vector>
 
 class Ring;
 class C_matrix;
@@ -12,6 +13,10 @@ class FriedelKellerLibseq
 {
 public:
     FriedelKellerLibseq(unsigned int s, unsigned int k, long seed);
+    // Supply 32-bit generating columns in binary-index order, dimension major:
+    // binaryColumns[j * k + c]. Construction still includes the initial scramble.
+    FriedelKellerLibseq(unsigned int s, unsigned int k, long seed,
+                       const std::vector<std::uint32_t>& binaryColumns);
     ~FriedelKellerLibseq();
 
     FriedelKellerLibseq(const FriedelKellerLibseq&) = delete;
@@ -31,6 +36,9 @@ public:
     std::uint64_t numPoints() const;
 
 private:
+    FriedelKellerLibseq(unsigned int s, unsigned int k, long seed,
+                       const std::vector<std::uint32_t>* binaryColumns);
+
     std::uint64_t numPoints_;
     std::uint64_t currentIndex_;
 
