@@ -248,6 +248,16 @@ int main()
         seed,
         numRuns,
         outputDir);
+    runTimingForMethod<HelmerNativeSobol, true>(
+        "Helmer-native",
+        "helmer-native-sobol",
+        models,
+        sValues,
+        kValues,
+        timingMValues,
+        seed,
+        numRuns,
+        outputDir);
     runTimingForMethod<NewCachedNusPointSet, true>(
         "NewCachedNusPointSet",
         "new-cached-nus",
